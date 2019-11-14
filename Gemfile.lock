@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     reviewbear (0.1.0)
+      fuzzy_match
       octokit
       thor
 
@@ -13,6 +14,7 @@ GEM
     coderay (1.1.2)
     faraday (0.17.0)
       multipart-post (>= 1.2, < 3)
+    fuzzy_match (2.1.0)
     method_source (0.9.2)
     multipart-post (2.1.1)
     octokit (4.14.0)

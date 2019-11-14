@@ -14,6 +14,12 @@ module Reviewbear
       dump.save(@octokit.client, repo)
     end
 
+    desc 'match REPO NUMBER', 'Find simillar pull request using fuzzy_match gem'
+    def match(repo, number)
+      match = Handler::Match.new
+      match.find(@octokit.client, repo, number)
+    end
+
     desc 'version', 'Print version information'
     def version
       version = Handler::Version.new
