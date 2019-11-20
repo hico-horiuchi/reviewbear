@@ -1,0 +1,7 @@
+---
+github:
+  token: abcdefghijklmnopqrstuvwxyz0123456789
+jira:
+  site: https://example.atlassian.net/
+  email: api-user@example.com
+  token: ************************

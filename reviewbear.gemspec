@@ -3,8 +3,9 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'reviewbear/version'
 
 Gem::Specification.new do |spec|
-  spec.add_dependency 'fuzzy_match'
+  spec.add_dependency 'jira-ruby'
   spec.add_dependency 'octokit'
+  spec.add_dependency 'settingslogic'
   spec.add_dependency 'thor'
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'pry'

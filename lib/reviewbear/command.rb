@@ -5,25 +5,31 @@ module Reviewbear
     def initialize(*args)
       super
 
-      @octokit = Helper::Octokit.new(ENV['GITHUB_ACCESS_TOKEN'])
+      @jira_client = Helper::Jira.new(
+        site: Config.jira.site,
+        email: Config.jira.email,
+        token: Config.jira.token
+      ).client
+
+      @octokit_client = Helper::Octokit.new(
+        token: Config.github.token
+      ).client
     end
 
-    desc 'dump REPO', 'Save all pull requests as JSON file'
-    def dump(repo)
+    desc 'dump PROJECT', 'Save all issues including pull requests'
+    def dump(project)
       dump = Handler::Dump.new
-      dump.save(@octokit.client, repo)
-    end
-
-    desc 'match REPO NUMBER', 'Find simillar pull request using fuzzy_match gem'
-    def match(repo, number)
-      match = Handler::Match.new
-      match.find(@octokit.client, repo, number)
+      dump.exec(
+        jira_client: @jira_client,
+        octokit_client: @octokit_client,
+        project: project
+      )
     end
 
     desc 'version', 'Print version information'
     def version
       version = Handler::Version.new
-      version.print
+      version.exec
     end
   end
 end

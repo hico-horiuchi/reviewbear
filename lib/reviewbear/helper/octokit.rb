@@ -4,8 +4,8 @@ module Reviewbear::Helper
   class Octokit
     attr_reader :client
 
-    def initialize(access_token)
-      @client = ::Octokit::Client.new(access_token: access_token)
+    def initialize(token:)
+      @client = ::Octokit::Client.new(access_token: token)
     end
   end
 end

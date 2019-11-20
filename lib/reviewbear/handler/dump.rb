@@ -2,30 +2,64 @@ require 'json'
 
 module Reviewbear::Handler
   class Dump
-    PULL_REQUEST_STATE = 'closed'.freeze
+    MAX_RESULTS = 50.freeze
+    PULL_REQUEST_PATTERN = /https:\/\/github.com\/(?<repo>[\w-]+\/[\w-]+)\/pull\/(?<number>\d+)/
 
-    def save(octokit_client, repo)
-      pull_requests = octokit_client.pull_requests(repo, state: PULL_REQUEST_STATE)
-      filename = "#{repo.split('/').last}.json"
+    def exec(**args)
+      jira_client = args[:jira_client]
+      octokit_client = args[:octokit_client]
+      project = args[:project]
 
-      data = pull_requests.each_with_object([]) do |pull_request, arr|
-        files = octokit_client.pull_request_files(repo, pull_request[:number])
+      data = {}
 
-        next if files.empty?
-
-        arr << {
-          html_url: pull_request[:html_url],
-          files: convert_files(files)
-        }
+      issues = search_issues(jira_client, jql(project))
+      scan_pull_requests(issues).each do |key, pull_requests|
+        data[key] = get_additions_and_deletions(octokit_client, pull_requests)
       end
 
-      File.write(filename, JSON.pretty_generate(data))
+      File.write("#{project}.json", JSON.pretty_generate(data))
     end
 
     private
 
-    def convert_files(files)
-      files.map { |f| "#{f[:filename]}+#{f[:additions]}-#{f[:deletions]}" }.join(':')
+    def jql(project)
+      "project = #{project} AND status = Done AND development[pullrequests].all > 0"
+    end
+
+    def search_issues(jira_client, query)
+      start_at = 0
+      issues = []
+
+      loop do
+        options = { start_at: start_at, max_results: MAX_RESULTS }
+        results = jira_client.Issue.jql(query, options)
+        issues += results
+
+        break if results.size < MAX_RESULTS
+        start_at += MAX_RESULTS
+      end
+
+      issues
+    end
+
+    def scan_pull_requests(issues)
+      issues.each_with_object({}) do |issue, hash|
+        next if issue.description.nil?
+        pull_requests = issue.description.scan(PULL_REQUEST_PATTERN)
+        next if pull_requests.empty?
+        hash[issue.key] = pull_requests.uniq
+      end
+    end
+
+    def get_additions_and_deletions(octokit_client, pull_requests)
+      pull_requests.each_with_object({}) do |(repo, number), hash|
+        pull_request = octokit_client.pull_request(repo, number.to_i)
+        hash[repo] = {
+          number: number.to_i,
+          additions: pull_request.additions,
+          deletions: pull_request.deletions
+        }
+      end
     end
   end
 end

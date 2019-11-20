@@ -1,6 +1,6 @@
 module Reviewbear::Handler
   class Version
-    def print
+    def exec(**args)
       puts "v#{Reviewbear::VERSION}"
     end
   end
