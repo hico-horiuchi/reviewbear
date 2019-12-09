@@ -5,6 +5,7 @@ require 'reviewbear/version'
 Gem::Specification.new do |spec|
   spec.add_dependency 'jira-ruby'
   spec.add_dependency 'octokit'
+  spec.add_dependency 'rumale'
   spec.add_dependency 'settingslogic'
   spec.add_dependency 'thor'
   spec.add_development_dependency 'bundler'

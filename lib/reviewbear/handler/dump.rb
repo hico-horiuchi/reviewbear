@@ -14,7 +14,9 @@ module Reviewbear::Handler
 
       issues = search_issues(jira_client, jql(project))
       scan_pull_requests(issues).each do |key, pull_requests|
-        data[key] = get_additions_and_deletions(octokit_client, pull_requests)
+        data[key] ||= {}
+        data[key]['summary'] = issues.find { |i| i.key == key }.summary
+        data[key]['pull_requests'] = get_additions_and_deletions(octokit_client, pull_requests)
       end
 
       File.write("#{project}.json", JSON.pretty_generate(data))
@@ -53,12 +55,16 @@ module Reviewbear::Handler
 
     def get_additions_and_deletions(octokit_client, pull_requests)
       pull_requests.each_with_object({}) do |(repo, number), hash|
-        pull_request = octokit_client.pull_request(repo, number.to_i)
-        hash[repo] = {
-          number: number.to_i,
-          additions: pull_request.additions,
-          deletions: pull_request.deletions
-        }
+        begin
+          pull_request = octokit_client.pull_request(repo, number.to_i)
+          hash[repo] = {
+            number: number.to_i,
+            additions: pull_request.additions,
+            deletions: pull_request.deletions
+          }
+        rescue Octokit::NotFound
+          next
+        end
       end
     end
   end

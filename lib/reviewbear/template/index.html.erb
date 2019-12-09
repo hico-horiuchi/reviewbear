@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        <title><%= params[:project] %></title>
+        <link href="https://unpkg.com/@primer/css/dist/primer.css" rel="stylesheet" />
+    </head>
+    <style type="text/css">
+        .markdown-body { font-size: small !important; }
+    </style>
+    <body>
+        <div class="markdown-body m-4">
+            <h1><%= params[:project] %></h1>
+            <ul>
+                <% 1.upto params[:clusters].size do |i| %>
+                    <li>
+                        <a href="#cluster-<%= i %>">Cluster <%= i %></a>
+                    </li>
+                <% end %>
+            </ul>
+            <% params[:clusters].each.with_index(1) do |cluster, i| %>
+                <h2 id="cluster-<%= i %>">Cluster <%= i %></h2>
+                <h3>Issue - Pull Request Matrix</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <td></td>
+                            <% repositories.each do |repository| %>
+                                <td><%= repository.to_s.split('/').last %></td>
+                            <% end %>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% cluster.each do |key, value| %>
+                            <tr>
+                                <td>
+                                    <a href="<%= params[:jira_site] %>browse/<%= key %>"><%= key %> <%= value[:summary] %></a>
+                                </td>
+                                <% repositories.each do |repository| %>
+                                    <% pull_request = value[:pull_requests][repository] %>
+                                    <td>
+                                        <% if pull_request %>
+                                            <a href="https://github.com/<%= repository %>/pull/<%= pull_request[:number] %>">#<%= pull_request[:number] %></a>
+                                            (+<%= pull_request[:additions] %>, -<%= pull_request[:deletions] %>)
+                                        <% end %>
+                                    </td>
+                                <% end %>
+                            <% end %>
+                        </ul>
+
+                    </tbody>
+                </table>
+            <% end %>
+        </div>
+    </body>
+</html>

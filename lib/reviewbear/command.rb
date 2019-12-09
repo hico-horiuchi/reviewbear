@@ -16,6 +16,15 @@ module Reviewbear
       ).client
     end
 
+    desc 'analyze PROJECT', 'Classify issues using k-nearest neighbor algorithm'
+    def analyze(project)
+      analyze = Handler::Analyze.new
+      analyze.exec(
+        jira_site: Config.jira.site,
+        project: project
+      )
+    end
+
     desc 'dump PROJECT', 'Save all issues including pull requests'
     def dump(project)
       dump = Handler::Dump.new
