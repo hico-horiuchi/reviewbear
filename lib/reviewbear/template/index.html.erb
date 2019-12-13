@@ -41,15 +41,34 @@
                                     <td>
                                         <% if pull_request %>
                                             <a href="https://github.com/<%= repository %>/pull/<%= pull_request[:number] %>">#<%= pull_request[:number] %></a>
-                                            (+<%= pull_request[:additions] %>, -<%= pull_request[:deletions] %>)
+                                            (<span class="text-green">+<%= pull_request[:additions] %></span>, <span class="text-red">-<%= pull_request[:deletions] %></span>)
                                         <% end %>
                                     </td>
                                 <% end %>
-                            <% end %>
-                        </ul>
-
+                            </tr>
+                        <% end %>
                     </tbody>
                 </table>
+                <% repositories.each do |repository| %>
+                    <% comments = params[:comments][i - 1] %>
+                    <% next unless comments && comments[repository] %>
+                    <h3><%= repository.to_s.split('/').last %></h3>
+                    <ul>
+                        <% comments[repository].each do |path, users| %>
+                            <li><%= path %></li>
+                            <ul>
+                                <% users.each do |user, items| %>
+                                    <li><%= user %></li>
+                                    <ul>
+                                        <% items.each do |item| %>
+                                            <li><%= item[:body] %> (<a href="<%= item[:url] %>"><%= item[:url].split('#').last %></a>)</li>
+                                        <% end %>
+                                    </ul>
+                                <% end %>
+                            </ul>
+                        <% end %>
+                    </ul>
+                <% end %>
             <% end %>
         </div>
     </body>

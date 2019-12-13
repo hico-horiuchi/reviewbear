@@ -3,7 +3,7 @@ require 'json'
 module Reviewbear::Handler
   class Dump
     MAX_RESULTS = 50.freeze
-    PULL_REQUEST_PATTERN = /https:\/\/github.com\/(?<repo>[\w-]+\/[\w-]+)\/pull\/(?<number>\d+)/
+    PULL_REQUEST_PATTERN = /https:\/\/github.com\/(?<repository>[\w-]+\/[\w-]+)\/pull\/(?<number>\d+)/
 
     def exec(**args)
       jira_client = args[:jira_client]
@@ -16,7 +16,7 @@ module Reviewbear::Handler
       scan_pull_requests(issues).each do |key, pull_requests|
         data[key] ||= {}
         data[key]['summary'] = issues.find { |i| i.key == key }.summary
-        data[key]['pull_requests'] = get_additions_and_deletions(octokit_client, pull_requests)
+        data[key]['pull_requests'] = get_pull_request_informations(octokit_client, pull_requests)
       end
 
       File.write("#{project}.json", JSON.pretty_generate(data))
@@ -53,18 +53,37 @@ module Reviewbear::Handler
       end
     end
 
-    def get_additions_and_deletions(octokit_client, pull_requests)
-      pull_requests.each_with_object({}) do |(repo, number), hash|
+    def get_pull_request_informations(octokit_client, pull_requests)
+      pull_requests.each_with_object({}) do |(repository, number), hash|
         begin
-          pull_request = octokit_client.pull_request(repo, number.to_i)
-          hash[repo] = {
+          number = number.to_i
+          pull_request = octokit_client.pull_request(repository, number)
+          user = pull_request.user.login
+
+          hash[repository] = {
             number: number.to_i,
             additions: pull_request.additions,
-            deletions: pull_request.deletions
+            deletions: pull_request.deletions,
+            comments: get_pull_request_comments(octokit_client, repository, number, user)
           }
         rescue Octokit::NotFound
           next
         end
+      end
+    end
+
+    def get_pull_request_comments(octokit_client, repository, number, user)
+      comments = octokit_client.pull_request_comments(repository, number)
+
+      comments.each_with_object({}) do |comment, hash|
+        next if comment.user.login == user
+
+        hash[comment.path] ||= []
+        hash[comment.path] << {
+          body: comment.body,
+          user: comment.user.login,
+          url: comment.html_url
+        }
       end
     end
   end

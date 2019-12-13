@@ -4,8 +4,10 @@ require 'rumale'
 
 module Reviewbear::Handler
   class Analyze
-    TEMPLATE_PATH = '../../template/index.html.erb'.freeze
     SEED = 10.freeze
+    COMMENT_THRESHOLD = 20.freeze
+    COMMENT_LENGTH = 100.freeze
+    TEMPLATE_PATH = '../../template/index.html.erb'.freeze
 
     def exec(**args)
       jira_site = args[:jira_site]
@@ -21,8 +23,10 @@ module Reviewbear::Handler
 
       n_samples = Numo::DFloat.cast(samples)
       result = k_means.fit_predict(n_samples)
+      clusters = classify_issues(issues, result)
+      comments = classify_comments(clusters)
 
-      params = { jira_site: jira_site, project: project, repositories: repositories, clusters: cluster_issues(issues, result) }
+      params = { jira_site: jira_site, project: project, repositories: repositories, clusters: clusters, comments: comments }
       template = File.read(File.expand_path(TEMPLATE_PATH, __FILE__))
 
       File.write("#{project}.html", ERB.new(template).result(binding))
@@ -31,20 +35,16 @@ module Reviewbear::Handler
     private
 
     def scan_issues(issues, repositories)
-      samples = []
-
-      issues.each do |_, issue|
+      issues.each_with_object([]) do |(_, issue), array|
         pull_requests = issue[:pull_requests]
-        samples << repositories.map do |repository|
+        array << repositories.map do |repository|
           pull_request = pull_requests[repository]
           pull_request ? [pull_request[:additions], pull_request[:deletions]] : [0, 0]
         end
       end
-
-      samples
     end
 
-    def cluster_issues(issues, result)
+    def classify_issues(issues, result)
       clusters = result.to_a.uniq
       labels = issues.keys
 
@@ -57,6 +57,42 @@ module Reviewbear::Handler
       end
 
       data.sort { |a, b| a.keys.size <=> b.keys.size }
+    end
+
+    def classify_comments(clusters)
+      clusters.map do |cluster|
+        cluster.values.each_with_object({}) do |value, hash|
+          value[:pull_requests].each do |repository, pull_request|
+            pull_request[:comments].each do |path, comments|
+              hash[repository] ||= {}
+              hash[repository][path] ||= {}
+
+              comments.select do |c|
+                c[:body].size > COMMENT_THRESHOLD
+              end.each do |c|
+                c[:body] = cut_off(c[:body], COMMENT_LENGTH)
+              end.group_by do |c|
+                c[:user]
+              end.each do |user, comment|
+                hash[repository][path][user] ||= []
+                hash[repository][path][user] += comment
+              end
+            end
+          end
+
+          hash.each do |repository, pathes|
+            pathes.select! { |_, users| users.present? }
+          end
+        end
+      end
+    end
+
+    def cut_off(text, length)
+      if text.length < length
+        text
+      else
+        text.scan(/^.{#{length}}/m)[0] + "…"
+      end
     end
   end
 end
