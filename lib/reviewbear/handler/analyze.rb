@@ -22,13 +22,16 @@ module Reviewbear::Handler
       samples = scan_issues(issues, repositories).map { |s| pca.fit_transform(s) }
 
       n_samples = Numo::DFloat.cast(samples)
-      result = k_means.fit_predict(n_samples)
+      model = k_means.fit(n_samples)
+      result = model.predict(n_samples)
+
       clusters = classify_issues(issues, result)
       comments = classify_comments(clusters)
 
       params = { jira_site: jira_site, project: project, repositories: repositories, clusters: clusters, comments: comments }
       template = File.read(File.expand_path(TEMPLATE_PATH, __FILE__))
 
+      File.binwrite("#{project}.dat", Marshal.dump(model))
       File.write("#{project}.html", ERB.new(template).result(binding))
     end
 
