@@ -38,6 +38,16 @@ module Reviewbear
       )
     end
 
+    desc 'review TICKET_ID', 'Predict the ticket belongs to which cluster'
+    def review(ticket_id)
+      review = Handler::Review.new
+      review.exec(
+        jira_client: @jira_client,
+        octokit_client: @octokit_client,
+        ticket_id: ticket_id
+      )
+    end
+
     desc 'version', 'Print version information'
     def version
       version = Handler::Version.new

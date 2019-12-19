@@ -53,15 +53,13 @@ module Reviewbear::Handler
       clusters = result.to_a.uniq
       labels = issues.keys
 
-      data = clusters.each_with_object([]) do |cluster, array|
+      clusters.each_with_object([]) do |cluster, array|
         array[cluster] ||= {}
         result.eq(cluster).where.each do |i|
           key = labels[i]
           array[cluster][key] = issues[key]
         end
       end
-
-      data.sort { |a, b| a.keys.size <=> b.keys.size }
     end
 
     def classify_comments(clusters)
