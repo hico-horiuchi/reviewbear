@@ -1,8 +1,8 @@
-require 'reviewbear/command'
-require 'reviewbear/config'
-require 'reviewbear/handler'
-require 'reviewbear/helper'
 require 'reviewbear/version'
+require 'reviewbear/config'
+require 'reviewbear/helper'
+require 'reviewbear/handler'
+require 'reviewbear/command'
 
 module Reviewbear
 end

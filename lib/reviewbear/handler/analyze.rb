@@ -4,6 +4,8 @@ require 'rumale'
 
 module Reviewbear::Handler
   class Analyze
+    include Reviewbear::Helper::String
+
     SEED = 10.freeze
     COMMENT_THRESHOLD = 20.freeze
     COMMENT_LENGTH = 100.freeze
@@ -87,14 +89,6 @@ module Reviewbear::Handler
             pathes.select! { |_, users| users.present? }
           end
         end
-      end
-    end
-
-    def cut_off(text, length)
-      if text.length < length
-        text
-      else
-        text.scan(/^.{#{length}}/m)[0] + "…"
       end
     end
   end

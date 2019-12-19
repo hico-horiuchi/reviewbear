@@ -2,8 +2,10 @@ require 'json'
 
 module Reviewbear::Handler
   class Dump
+    include Reviewbear::Helper::Jira
+    include Reviewbear::Helper::Octokit
+
     MAX_RESULTS = 50.freeze
-    PULL_REQUEST_PATTERN = /https:\/\/github.com\/(?<repository>[\w-]+\/[\w-]+)\/pull\/(?<number>\d+)/
 
     def exec(**args)
       jira_client = args[:jira_client]
@@ -47,43 +49,9 @@ module Reviewbear::Handler
     def scan_pull_requests(issues)
       issues.each_with_object({}) do |issue, hash|
         next if issue.description.nil?
-        pull_requests = issue.description.scan(PULL_REQUEST_PATTERN)
+        pull_requests = scan_pull_request(issue)
         next if pull_requests.empty?
         hash[issue.key] = pull_requests.uniq
-      end
-    end
-
-    def get_pull_request_informations(octokit_client, pull_requests)
-      pull_requests.each_with_object({}) do |(repository, number), hash|
-        begin
-          number = number.to_i
-          pull_request = octokit_client.pull_request(repository, number)
-          user = pull_request.user.login
-
-          hash[repository] = {
-            number: number.to_i,
-            additions: pull_request.additions,
-            deletions: pull_request.deletions,
-            comments: get_pull_request_comments(octokit_client, repository, number, user)
-          }
-        rescue Octokit::NotFound
-          next
-        end
-      end
-    end
-
-    def get_pull_request_comments(octokit_client, repository, number, user)
-      comments = octokit_client.pull_request_comments(repository, number)
-
-      comments.each_with_object({}) do |comment, hash|
-        next if comment.user.login == user
-
-        hash[comment.path] ||= []
-        hash[comment.path] << {
-          body: comment.body,
-          user: comment.user.login,
-          url: comment.html_url
-        }
       end
     end
   end

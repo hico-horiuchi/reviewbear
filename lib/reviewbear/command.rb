@@ -2,18 +2,21 @@ require 'thor'
 
 module Reviewbear
   class Command < Thor
+    include Helper::Jira
+    include Helper::Octokit
+
     def initialize(*args)
       super
 
-      @jira_client = Helper::Jira.new(
+      @jira_client = get_jira_client(
         site: Config.jira.site,
         email: Config.jira.email,
         token: Config.jira.token
-      ).client
+      )
 
-      @octokit_client = Helper::Octokit.new(
+      @octokit_client = get_octokit_client(
         token: Config.github.token
-      ).client
+      )
     end
 
     desc 'analyze PROJECT', 'Classify issues using k-nearest neighbor algorithm'
