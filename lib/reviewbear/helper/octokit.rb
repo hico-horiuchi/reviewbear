@@ -10,7 +10,7 @@ module Reviewbear::Helper
       pull_requests.each_with_object({}) do |(repository, number), hash|
         begin
           hash[repository] = get_pull_request_information(octokit_client, repository, number.to_i)
-        rescue Octokit::NotFound
+        rescue ::Octokit::NotFound
           next
         end
       end
